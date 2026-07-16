@@ -107,5 +107,6 @@
 <tr><td nowrap>7월 13일</td><td>머신러닝 — Docker+Jupyter 환경(bind mount 함정), 파이썬 기초 문법(f-string·컴프리헨션·dict순회·sorted+lambda), 연습문제 20선(train_test_split 직접구현·데이터 누수 방지), Numpy(ndarray·브로드캐스팅·axis 집계·reshape)</td><td nowrap align="center"><a href="./full-stack/필기/7월/13일.md">보기</a></td></tr>
 <tr><td nowrap>7월 14일</td><td>머신러닝 — Pandas DataFrame 실습(loc·iloc·결측치·라벨/원핫 인코딩·groupby), 이진분류 파이프라인 9단계 실전(RandomForestClassifier·정확도 0.8528·ROC-AUC 0.9014)</td><td nowrap align="center"><a href="./full-stack/필기/7월/14일.md">보기</a></td></tr>
 <tr><td nowrap>7월 15일</td><td>머신러닝 — 다중분류 파이프라인(Credit Score 3클래스, 05단계까지 미완성), 노트북 실행순서(execution_count) 검증·cat_cols/num_cols 빈 리스트 함정 발견</td><td nowrap align="center"><a href="./full-stack/필기/7월/15일.md">보기</a></td></tr>
+<tr><td nowrap>7월 16일</td><td>머신러닝 — 다중분류 파이프라인 완성(06 학습·검증·07 모델 내보내기), 오염 데이터 자동 복구(숫자변환 성공률 90%)·라벨 인코딩(카테고리 과다 시 원핫 대신)·macro vs weighted f1 격차로 소수 클래스 약점 진단</td><td nowrap align="center"><a href="./full-stack/필기/7월/16일.md">보기</a></td></tr>
 </tbody>
 </table>

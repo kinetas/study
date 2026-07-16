@@ -139,27 +139,32 @@ Adult Census 소득 데이터(`train.csv`/`test.csv`)로 소득이 `>50K`인지 
 
 ---
 
-## 04_MACHINE_LEARNING — Supervised_Learning · 다중분류 (`Multiclass_Classfication/ex/01.ipynb`, 미완성)
+## 04_MACHINE_LEARNING — Supervised_Learning · 다중분류 (`Multiclass_Classfication/ex/01.ipynb`, 완성)
 
-Credit Score 데이터(`train.csv` 10만행×28열 / `test.csv` 5만행×27열)로 고객 신용등급을 `Poor`/`Standard`/`Good` 3개 클래스로 분류하는 다중분류 파이프라인. 이진분류(`Binary_Classfication`)와 동일한 7단계 스켈레톤(문제정의→가져오기→EDA→전처리→분할·학습→검증→내보내기)을 재사용하되 타겟이 2클래스에서 3클래스로 확장된 버전. **05단계(라벨 매핑·원핫인코딩)까지만 작성돼 있고 06(모델 학습·검증지표)·07(모델/제출파일 내보내기) 셀은 비어 있어 아직 미완성.**
+Credit Score 데이터(`train.csv` 10만행×28열 / `test.csv` 5만행×27열)로 고객 신용등급을 `Poor`/`Standard`/`Good` 3개 클래스로 분류하는 다중분류 파이프라인. 이진분류(`Binary_Classfication`)와 동일한 스켈레톤(문제정의→가져오기→EDA→전처리→분할·학습→검증→내보내기)을 재사용하되 타겟이 2클래스에서 3클래스로 확장된 버전. **01~07단계 모두 작성·실행 완료**(모델은 `model.pkl`, EDA 리포트는 `report.html`로 저장됨). 08 기타 섹션에 박스플롯 참고 셀이 추가돼 있으나 `plt` import 누락으로 에러 상태.
 
 | 단계 | 코드 | 핵심 |
 |---|---|---|
-| 1. 문제정의 | 타겟 `Credit_Score` | `Poor`/`Standard`/`Good` 3개 클래스 — 이진분류의 `income`(`<=50K`/`>50K`)과 달리 다중분류 |
-| 2. IMPORT | `pd.read_csv('train.csv')`/`test.csv'` | `Num_of_Delayed_Payment` 등 26번째 컬럼에서 `DtypeWarning`(혼합 타입) 발생 |
-| 3. EDA | `head()`, `Credit_Score.unique()`, `describe()`, `info()`, `isnull().sum()` | `Age`에 `-500`, `Occupation`에 `_______` 같은 오염된 문자열이 그대로 들어있음(전처리 전 반드시 확인해야 할 이상치) |
-| 4. 결측치 처리 | `cat_cols`/`num_cols`를 `dtype`+`isnull().any()` 조건의 리스트컴프리헨션으로 뽑아 train 중앙값/최빈값으로 `fillna` | **주의**: 실제 저장된 노트북은 셀 실행 순서(`execution_count`)가 1→44 뒤섞여 있어, 화면상 `cat_cols`/`num_cols` 결과가 빈 리스트(`[]`)로 찍혀 있음 — 위에서 아래로 새로 실행(Restart & Run All)하면 `Name`/`Type_of_Loan`/`Monthly_Balance` 등 실제 결측 컬럼이 잡히는지 재검증 필요 |
-| 5. 라벨 인코딩 + 인코딩 | `y = train['Credit_Score'].map({'Poor':0,'Standard':1,'Good':2})`; `train.drop(columns=['ID','Customer_ID','Credit_Score'])`; `pd.concat([train,test])` 후 `pd.get_dummies` → `X`/`X_test` 분리 | 이진분류와 동일하게 train+test를 합쳐서 원핫 인코딩(더미 컬럼 어긋남 방지) |
-| 6. 학습·검증 | *(미작성)* | `train_test_split(..., stratify=y)` → `RandomForestClassifier` → `accuracy_score`/`classification_report`가 다음 순서로 필요(이진분류 절차와 동일, 다만 `roc_auc_score`는 다중분류라 `multi_class='ovr'` 옵션 또는 클래스별 확률 필요) |
-| 7. 내보내기 | *(미작성)* | 모델 저장(`joblib`) 및 `test_id` 기준 제출 파일(`submission.csv`) 생성 필요 |
-
-> `ex/01-Copy1.ipynb`는 다중분류와 무관하게 `Binary_Classfication/ex/01.ipynb`(Adult Census 이진분류) 내용을 그대로 복사해둔 흔적 — 이 폴더의 실질적인 다중분류 작업은 `01.ipynb` 하나.
+| 1. 문제정의 | 타겟 `Credit_Score` (`Poor`=0/`Standard`=1/`Good`=2) | 3개 등급이 대등해 이진분류처럼 "양성(1)"이라는 개념이 없음 → **ROC-AUC를 못 쓴다**(양성 vs 음성 구도가 전제라서). 채점 지표로 **정확도 + f1(macro)** 사용 — 이진분류와의 핵심 차이가 "몇 종류인가"뿐 아니라 "어떻게 채점하나"까지 바뀐다는 점 |
+| 2. IMPORT | `pd.read_csv('train.csv', low_memory=False)` | `low_memory=False`로 혼합타입 `DtypeWarning` 방지. train (100000,28) / test (50000,27) |
+| 3. EDA | `head()`, `Credit_Score.unique()`, `describe()`, `info()`, `isnull().sum()`, `value_counts()` | `Age`에 `-500`, `Occupation`에 `_______` 같은 오염 문자열이 그대로 들어있음. 클래스 분포 `Standard 53174 / Poor 28998 / Good 17828`로 약 3배 차이 나는 불균형 |
+| 4-1. 오염 체크·자동 수정 | `object` 컬럼마다 `str.replace('_','')` 후 `pd.to_numeric(errors='coerce')`로 숫자 변환 성공 비율 계산 → **90% 이상이면 오염된 숫자 컬럼**으로 판단해 실제 숫자형으로 변환 | `Age`/`Annual_Income`/`Num_of_Loan`/`Outstanding_Debt`는 100%, `Num_of_Delayed_Payment`(93%)/`Changed_Credit_Limit`(98%)/`Amount_invested_monthly`(96%)/`Monthly_Balance`(99%)도 오염 판정 → 8개 컬럼을 문자열에서 숫자로 되돌림. train+test 동일 기준 적용 |
+| 4-2. EDA 리포트 (선택) | `ydata_profiling.ProfileReport(train).to_file('report.html')` | 컬럼별 분포·상관관계를 한 번에 훑는 자동 리포트. 오염 수정 **직후**(숫자 변환 전 문자열 오염이 반영 안 된 시점)에 생성돼 있어, 최신 상태를 보려면 재실행 필요 |
+| 4-3. 결측치 처리 | 숫자 변환으로 결측이 새로 드러남(train 62162 / test 31112개 셀) → `null_series[(null_series>0) & (dtype조건)]`로 `cat_cols`(`Name`/`Type_of_Loan`/`Credit_History_Age`)·`num_cols`(`Monthly_Inhand_Salary` 등 6개) 분리 후 train 중앙값/최빈값으로 `fillna` | 오염 수정 **이전**엔 결측이 0으로 보였다가, 오염된 문자열이 숫자로 바뀌면서 변환 실패분이 `NaN`으로 드러나는 순서 — "결측 없음"이 데이터 정제 전 착시였을 수 있다는 예시 |
+| 4-4. 타겟 분리·컬럼 제거 | `y = train['Credit_Score'].map({...})`; `train.drop(columns=['ID','Customer_ID','Credit_Score'])`; `test.drop(columns=['ID','Customer_ID'])` | 이진분류와 동일한 식별자 제거 패턴 |
+| 4-5. 인코딩 | `LabelEncoder`를 `pd.concat([train[col], test[col]])`에 `fit` 후 각각 `transform` | **원핫이 아닌 라벨 인코딩** 선택 — `Name`/`SSN`처럼 카테고리 수가 너무 많은 컬럼에 `get_dummies`를 쓰면 열이 폭발적으로 늘어나므로, 이진분류(`get_dummies`)와 다른 인코딩 전략을 씀. train+test를 합쳐서 `fit`하는 원칙은 동일(인코딩 기준 통일) |
+| 5. 검증데이터 분할 | `train_test_split(train, y, test_size=0.2, random_state=0, stratify=y)` | (80000,25) / (20000,25). `stratify=y`로 3개 클래스 비율 유지 |
+| 6. 학습·검증 | `RandomForestClassifier(n_estimators=100, random_state=0)` → `accuracy_score`/`f1_score(average='macro')`/`classification_report` | 정확도 0.7885, f1(macro) 0.7751. **`average='macro'`는 다중분류 필수 인자** — 안 주면 "클래스별 f1 3개를 어떻게 합칠지" 몰라 에러가 남 |
+| 6-1. macro vs weighted 비교 | `f1_score(..., average='macro')` vs `average='weighted'` | macro 0.7751 < weighted 0.7883. weighted는 개수가 많은 `Standard`(1등급, support 10635, f1 0.81)가 점수를 끌어올리고, 표본이 적고 어려운 `Good`(2등급, support 3566, f1 0.72)은 묻힘. **두 값의 격차가 "소수 클래스가 약하다"는 신호** — 이 단원에서 가장 중요한 포인트로 명시돼 있음 |
+| 7. 내보내기 | `joblib.dump(rf, 'model.pkl')` → `joblib.load()`로 재로드 후 예측 일치 검증(`True`) | 이진분류의 `submission.csv` 대신 모델 자체 저장에 집중 — `test_id` 기준 제출 파일 생성 단계는 없음 |
+| 8. 기타 | `train.select_dtypes('number').plot(kind='box', subplots=True)` | `plt`(matplotlib) import 없이 `plt.tight_layout()/show()` 호출 → `NameError: name 'plt' is not defined`로 에러 상태. 바로 아래 박스플롯(Q1/Q3/IQR/수염/이상치) 해석 가이드 마크다운 셀은 정상 작성됨 |
 
 ---
 
 ## 다음에 볼 것
 
-- `Multiclass_Classfication/ex/01.ipynb`의 06(모델 학습·검증)·07(내보내기) 단계 이어서 작성 필요 — 이진분류 코드에서 `RandomForestClassifier`+`classification_report` 패턴 그대로 가져오되 다중분류 지표(`multi_class` 옵션 등) 확인
-- 위 04단계에서 언급한 `cat_cols`/`num_cols` 빈 리스트 이슈 — 노트북 Restart & Run All로 재검증해서 실제 결측치 처리가 되는지 확인 필요
+- `Multiclass_Classfication/ex/01.ipynb` 08 기타 셀의 `plt` import 누락 수정 필요(`import matplotlib.pyplot as plt` 추가) — 현재 박스플롯 셀이 `NameError`로 에러 상태
+- `Multiclass_Classfication/ex/model.pkl`(약 226MB)·`report.html`(약 38MB)이 git 미추적 상태로 새로 생김 — 이 크기의 바이너리를 그대로 커밋하면 저장소가 급격히 커지므로 `.gitignore` 추가 여부 결정 필요
+- `Multiclass_Classfication/ex/report.html`(ydata-profiling)이 오염 수정 **직전** 시점의 `train`으로 생성돼 있음 — 오염 수정 이후 최신 상태로 재생성할지 확인 필요
 - `Supervised_Learning`에 회귀(Regression) 또는 다른 분류 알고리즘 비교 노트북 추가 여부 확인 필요
-- `00/requirements.txt`에 sklearn·pandas 버전 고정 여부 확인 필요 (컨테이너 재빌드 시 버전 드리프트 방지)
+- `00/requirements.txt`에 sklearn·pandas·ydata-profiling 버전 고정 여부 확인 필요 (컨테이너 재빌드 시 버전 드리프트 방지)
