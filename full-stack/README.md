@@ -108,5 +108,8 @@
 <tr><td nowrap>7월 14일</td><td>머신러닝 — Pandas DataFrame 실습(loc·iloc·결측치·라벨/원핫 인코딩·groupby), 이진분류 파이프라인 9단계 실전(RandomForestClassifier·정확도 0.8528·ROC-AUC 0.9014)</td><td nowrap align="center"><a href="./full-stack/필기/7월/14일.md">보기</a></td></tr>
 <tr><td nowrap>7월 15일</td><td>머신러닝 — 다중분류 파이프라인(Credit Score 3클래스, 05단계까지 미완성), 노트북 실행순서(execution_count) 검증·cat_cols/num_cols 빈 리스트 함정 발견</td><td nowrap align="center"><a href="./full-stack/필기/7월/15일.md">보기</a></td></tr>
 <tr><td nowrap>7월 16일</td><td>머신러닝 — 다중분류 파이프라인 완성(06 학습·검증·07 모델 내보내기), 오염 데이터 자동 복구(숫자변환 성공률 90%)·라벨 인코딩(카테고리 과다 시 원핫 대신)·macro vs weighted f1 격차로 소수 클래스 약점 진단</td><td nowrap align="center"><a href="./full-stack/필기/7월/16일.md">보기</a></td></tr>
+<tr><td nowrap>7월 17일</td><td>제헌절</td><td align="center">-</td></tr>
+<tr><td nowrap>7월 20일</td><td>머신러닝 — 선형회귀 파이프라인(BigMart 매출 예측), 단순회귀(R² 0.31) vs 다중회귀(원핫 인코딩 35열·R² 0.57) 비교, statsmodels OLS로 sklearn 계수·p-value 교차검증</td><td nowrap align="center"><a href="./full-stack/필기/7월/20일.md">보기</a></td></tr>
+<tr><td nowrap>7월 21일</td><td>[모듈시험] 공공데이터 융합 DBMS 구축</td><td align="center">-</td></tr>
 </tbody>
 </table>
