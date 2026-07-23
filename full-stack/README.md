@@ -111,5 +111,6 @@
 <tr><td nowrap>7월 17일</td><td>제헌절</td><td align="center">-</td></tr>
 <tr><td nowrap>7월 20일</td><td>머신러닝 — 선형회귀 파이프라인(BigMart 매출 예측), 단순회귀(R² 0.31) vs 다중회귀(원핫 인코딩 35열·R² 0.57) 비교, statsmodels OLS로 sklearn 계수·p-value 교차검증</td><td nowrap align="center"><a href="./full-stack/필기/7월/20일.md">보기</a></td></tr>
 <tr><td nowrap>7월 21일</td><td>[모듈시험] 공공데이터 융합 DBMS 구축</td><td align="center">-</td></tr>
+<tr><td nowrap>7월 22일</td><td>머신러닝 — 로지스틱 회귀(질병 예측·유방암 진단, 스케일러 누락 함정), 성능 개선(cross_val_score·GridSearchCV 점수 착시·파이프라인)</td><td nowrap align="center"><a href="./full-stack/필기/7월/22일.md">보기</a></td></tr>
 </tbody>
 </table>
