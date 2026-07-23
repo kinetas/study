@@ -179,3 +179,67 @@ BigMart 매출 데이터(`train.csv` 6818행×12열 / `test.csv` 1705행×11열)
 
 > 분류(정확도/f1/ROC-AUC)와 달리 회귀는 **RMSE·MAE·R²**로 채점 — 분류의 "이진분류 4가지 결정" 프레임에서 "2)답이 몇 종류인가"가 "연속 숫자"로 답해지는 순간 3)·4)가 통째로 회귀 지표 세트로 바뀐다는 점이 이 단원의 핵심.
 
+---
+
+## 04_MACHINE_LEARNING — Supervised_Learning · 로지스틱 회귀 (`04_Logistic_Regression/01.ipynb`)
+
+건강검진 데이터(`health_survey.csv` 1000행×5열: `age`/`bmi`/`smoker`/`activity_level`/`disease`)로 질병 유무(`disease`, 0/1)를 예측하는 이진분류. 회귀(연속값 예측)에서 다시 분류로 돌아오되, **확률을 출력하는 선형모델**이라는 점이 이번 단원의 핵심 — "회귀"라는 이름이 붙었지만 실제로는 분류 모델이라는 이름의 함정부터 짚는다.
+
+| 단계 | 코드 | 핵심 |
+|---|---|---|
+| EDA | `df['disease'].value_counts()`(1:588, 0:412, 약 59:41), `df.corr()['disease']`, `groupby(pd.cut(...))` | 상관 1위는 `bmi`(0.21)로 회귀 때보다 훨씬 약함 — 나이대별(`pd.cut`)·흡연 여부별·활동수준별 `disease` 평균을 그룹집계로 뜯어보면 나이가 많을수록(0.483→0.674), 흡연자가(0.566→0.640), 활동이 적을수록(0.647→0.542) 질병 비율이 오른다는 경향이 드러남 |
+| 시그모이드 원리 | `z = np.linspace(-8,8,100)`; `sigmoid = 1/(1+np.exp(-z))` | 로지스틱 회귀가 "선형회귀 값(z)을 0~1 확률로 눌러 담는" 함수라는 걸 직접 그려서 확인 — z=0일 때 정확히 0.5(`axhline`로 기준선 표시) |
+| 검증 분할 | `train_test_split(X, y, test_size=0.2, random_state=0, stratify=y)` | (800,4)/(200,4). 분류이므로 `stratify=y` 유지 |
+| 스케일링 | `StandardScaler().fit_transform(X_tr)` → `transform(X_val)` | **fit은 train에만**, val은 transform만 — 데이터 누수 방지 원칙이 회귀·분류 가리지 않고 그대로 적용 |
+| 학습·평가 | `LogisticRegression().fit(X_tr_s, y_tr)` → `predict`/`predict_proba(...)[:,1]` → `accuracy_score`/`roc_auc_score`/`classification_report` | 정확도 0.615, ROC-AUC 0.6271 — 그다지 강한 모델은 아님(특성 4개로는 질병 여부를 설명하기 부족) |
+| 계수 해석 | `pd.Series(model.coef_[0], index=X.columns).sort_values(ascending=False)` | `bmi` 0.436(위험↑ 최대) > `age` 0.359(위험↑) > `smoker` 0.116(위험↑) > `activity_level` -0.243(활동 많을수록 위험↓) — 부호로 방향, 크기로 영향력을 동시에 읽음 |
+| 스케일링 유무 비교 | 스케일링 O/X 두 모델 나란히 학습·비교 | 정확도(0.615)·AUC(0.6271 vs 0.626)가 **거의 안 변함** — 특성이 4개뿐이고 범위 차이(나이 18~79 vs 흡연 0~1, 약 40배)가 크지 않아 로지스틱 기본 규제(`C=1.0`)의 왜곡이 눈에 띄지 않음. 단, 원본(비스케일링) 계수는 `activity_level` -0.294, `smoker` 0.246처럼 **크기 비교가 왜곡**되어(스케일 안 맞으면 계수 크기로 영향력 비교 불가) 계수 해석 목적이라면 스케일링이 필요 |
+| 임계값 튜닝 | `for t in [0.5, 0.3]: pt = (proba>=t).astype(int)` | 임계값 0.5→recall 0.7373/precision 0.6541, 0.3→recall 1.0000/precision 0.6051 — 임계값을 낮추면 "질병 있음"으로 더 많이 판정해 recall은 오르고 precision은 내려가는 트레이드오프를 수치로 확인 |
+| 모델 내보내기 | `joblib.dump(model, ...)` + **`joblib.dump(scaler, ...)`** | 스케일러를 안 저장하고 새 환자 원본값을 그대로 넣으면 질병확률이 0.806(정상) → 1.000(스케일러 누락)으로 **완전히 틀어짐** — "스케일러도 모델과 함께 반드시 저장"이 이 단원 최대 경고 포인트 |
+
+### 연습문제 (`ex/`) — 유방암(Breast Cancer) 진단, sklearn 내장 데이터로 같은 파이프라인 재적용
+
+`load_breast_cancer()`(569행×30열, 다운로드/로그인 불필요)로 같은 01~08단계를 반복하되, 본편과 결과가 극단적으로 달라지는 이유를 짚는 문제. `ex/코드.ipynb`는 데이터 로드만 있는 빈 틀이고, 실제 정답은 `ex/정답-checkpoint.ipynb`(해설은 `ex/정답_해설-checkpoint.md`)에 완성돼 있다.
+
+| 단계 | 코드 | 핵심 |
+|---|---|---|
+| 01 문제정의 | `target_names` = `['malignant','benign']` | **이 과제의 진짜 함정.** 의학의 "양성(benign)"은 "순한 혹, 괜찮다"는 뜻인데 머신러닝의 "양성(positive=1)"은 "찾고 싶은 쪽"이라는 뜻 — 이 데이터에서 `target=1`은 benign(건강한 쪽)이라 **sklearn이 말하는 "양성 클래스"가 오히려 우리가 안 찾고 싶은 쪽**. `target_names`를 안 찍어보면 classification_report를 끝까지 뒤집어 읽게 됨 |
+| 03 EDA | `X[['mean area','mean smoothness']].describe()` | `mean area` 143~2501 vs `mean smoothness` 0.05~0.16 — **범위 차이 약 15,000배**(본편은 40배). 클래스 비율은 63:37로 준수한 균형 |
+| 04 전처리 | 결측 0, 전부 숫자 | 본편과 동일하게 할 일 없음. 스케일링은 데이터 누수 방지를 위해 05(분할) 이후로 미룸 |
+| 05 학습 | `train_test_split` → `StandardScaler`(train만 fit) → `LogisticRegression(max_iter=5000)` | 기본값(`max_iter=100`)으론 수렴 경고 — 특성이 30개로 많아 반복 계산(경사하강)이 더 필요해서 늘림 |
+| 06 검증 | `accuracy_score`/`roc_auc_score`/`classification_report(target_names=['악성(0)','양성(1)'])` | **정확도 0.9825, ROC-AUC 0.9957** — 본편(AUC 0.6271)과 같은 로지스틱·같은 코드인데 압도적으로 높음. 모델이 아니라 **데이터(세포 측정치)가 애초에 악성/양성을 잘 가르는 정보를 담고 있어서**임 |
+| 06-1 혼동행렬 | `confusion_matrix(y_val, pred)` → `[[40,2],[0,72]]` | 정확도 98%에 만족하면 안 되는 이유: **틀린 2건이 전부 "악성을 양성(건강)으로 놓친" 방향(FN)**, 반대 방향(FP)은 0건 — 의료에서 가장 위험한 실수 패턴이 정확도 숫자 뒤에 숨어있었음 |
+| 08-1 임계값과 위험 판단 | `recall_score(y_val, pt, pos_label=0)`로 **악성(0)의 recall**을 임계값별로 비교 | 임계값 0.5→놓친 악성 2명(정확도 0.9825), 0.9→놓친 악성 1명(정확도 0.9386) — 정확도 4%p를 내주고 환자 1명을 더 살리는 트레이드오프. `pos_label=0`이 필요한 이유 자체가 01단계 "양성이 뒤집힌" 함정이 코드로 재등장한 것 |
+| 08-2 스케일링 유무 비교 | 스케일링 O(정확도 0.9825) vs X(0.9474) | 본편(4특성, 범위차 40배)은 스케일링 유무가 성능에 무영향이었는데, 여기(30특성, 범위차 15,000배)는 확실히 하락 — 로지스틱 기본 규제(`C=1.0`)가 "범위가 작은 특성"(`mean smoothness`)의 계수만 골라서 누르기 때문. **"스케일링은 성능과 무관하다"는 본편에서의 관찰이 일반 규칙이 아니었음**을 반증 |
+| 08-3 계수 해석 | `coef.abs().sort_values(ascending=False)` | 상위 `radius error`(1.325), `worst radius`(0.984) 등 — 크기·모양의 불규칙성이 악성 판단에 크게 기여(상식과 일치). 단 `1=benign`이므로 계수가 **음수여야 악성 쪽을 가리킨다**는 부호 해석 함정이 여기서도 재등장 |
+
+> 본편(AUC 0.63)과 연습문제(AUC 0.9957)의 극단적 차이, 스케일링 무영향→유의미 반전, "양성"의 의미 반전까지 — **같은 알고리즘·같은 코드라도 데이터의 성질(변별력, 특성 범위, 라벨 정의)에 따라 결론이 완전히 달라질 수 있다**는 게 이 단원 전체를 관통하는 교훈.
+
+---
+
+## 04_MACHINE_LEARNING — Supervised_Learning · 성능 개선 (`05_Performance_Improvements/01.ipynb`)
+
+당뇨병 진행도 예측(`load_diabetes`, 442행×10열, 연속 타겟)을 소재로 지금까지 써온 **"한 번 분할해서 검증"** 방식의 한계를 짚고, 교차검증·규제·하이퍼파라미터 튜닝·파이프라인 순서로 더 신뢰할 수 있는 평가·개선 방법을 익히는 단원. 새 모델을 배우는 게 아니라 **같은 `LinearRegression`을 더 정직하게 평가하고 다듬는 법**이 주제.
+
+| 단계 | 코드 | 핵심 |
+|---|---|---|
+| 1. 단일 분할의 한계 | `train_test_split` → `LinearRegression().fit(X_tr, y_tr)` → `r2_score` | 단일 분할 R² 0.3322 — 이 값은 **어떤 20%가 뽑혔는지에 따라 운으로 흔들릴 수 있는 숫자**라는 문제 제기가 다음 단계로 이어짐 |
+| 2. 교차검증 | `cross_val_score(LinearRegression(), X, y, cv=5, scoring='r2')` | 데이터를 5등분해 번갈아 검증셋으로 써서 5개 점수(`[0.43, 0.523, 0.483, 0.426, 0.55]`) 평균 **R² 0.4823** — 단일 분할(0.33)보다 높고 안정적. "운 좋은/나쁜 20%" 하나에 의존하지 않고 5번 평가한 평균이라 더 믿을 만함 |
+| 3. 규제 모델 비교 | `Ridge(alpha=1)` vs `Lasso(alpha=0.1)`를 각각 `cross_val_score`로 비교 | Ridge 평균 R² 0.4102, Lasso 평균 R² 0.4795 — 같은 교차검증 틀 위에 모델만 바꿔 끼워 공정 비교. 이 데이터에서는 규제가 약한 Lasso가 기본 `LinearRegression`(0.4823)에 더 근접 |
+| 4. 하이퍼파라미터 튜닝 | `GridSearchCV(Ridge(), {'alpha':[0.01,0.1,1,10,100]}, cv=5, scoring='r2').fit(X_tr, y_tr)` | 최적 `alpha=0.01`, 최적 CV R² 0.5267 — 그런데 이 최적값으로 `X_val`을 예측한 **진짜 검증 R²는 0.33**으로 뚝 떨어짐. GridSearchCV가 고른 "최고 점수"는 train 내부 교차검증 점수이지, 한 번도 안 본 진짜 검증셋 점수가 아니라는 **점수 착시**를 실측으로 확인 |
+| 5. 파이프라인 | `make_pipeline(StandardScaler(), Ridge(alpha=1))` → `cross_val_score(pipe, X, y, cv=5)` | 평균 R² 0.4822 — 3번의 Ridge(0.4102)와 비슷한 값이지만, 여기서는 **스케일링이 매 fold의 train에만 `fit`되고 검증 fold는 transform만 적용**되어 폴드 간 정보가 새지 않는 게 핵심. 숫자보다 "누수 없이 얻은 정직한 점수"라는 점이 이 단계의 요점 |
+
+> 4번(GridSearchCV best_score_)과 5번(pipeline cross_val_score)을 나란히 보면, **"교차검증 점수가 왜 이렇게 높게 나오지?"라는 의심이 들 때 파이프라인으로 전처리까지 폴드 안에 가두고 다시 재봐야 한다**는 실전 점검 습관으로 이어짐.
+
+### 연습문제 (`ex/`) — 와인 품질(Wine Quality) 데이터로 baseline→튜닝 흐름 재적용
+
+레드와인 품질 데이터(`plotly/datasets` CSV, URL로 바로 로드)에 `RandomForestRegressor`로 같은 "교차검증 baseline → GridSearchCV 튜닝" 흐름을 적용하는 문제. 정답은 `ex/정답.ipynb`, 해설은 `ex/정답_해설.md`.
+
+| 단계 | 코드 | 핵심 |
+|---|---|---|
+| 1. baseline | `cross_val_score(RandomForestRegressor(random_state=0), X, y, cv=5, scoring='r2').mean()` | **baseline 평균 R² 0.3118** — 튜닝 전 기준점을 먼저 숫자로 고정 |
+| 2. GridSearchCV 튜닝 | `GridSearchCV(RandomForestRegressor(random_state=0), {'n_estimators':[100,300],'max_depth':[None,10,20]}, cv=5, scoring='r2').fit(X, y)` | 최적 파라미터 `{'max_depth':10, 'n_estimators':300}`, 최적 CV R² **0.3181** — baseline 대비 개선폭이 겨우 0.0063으로 **미미함** |
+| 3. 트레이드오프 정리 | (생각해보기) | 후보 조합 `2×3=6`가지 × `cv=5`폴드 = **30번 학습**을 돌려서 얻은 개선이 0.006 수준 — 튜닝은 "후보 수 × fold 수"만큼 비용이 드므로, 향상폭이 작다면 **하이퍼파라미터를 더 뒤지기보다 데이터·특성 쪽을 개선하는 게 효율적**일 수 있다는 결론 |
+
+> 01(당뇨, `Ridge`/`Lasso`)과 `ex`(와인, `RandomForestRegressor`) 모두 **"교차검증으로 baseline을 먼저 잡고, GridSearchCV로 같은 CV 틀 안에서 후보를 비교한다"**는 동일한 절차를 다른 모델·다른 데이터에 반복 — 모델 종류가 바뀌어도 성능 개선 절차 자체는 그대로 재사용된다는 게 이 단원의 핵심 패턴.
+
