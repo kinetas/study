@@ -113,5 +113,6 @@
 <tr><td nowrap>7월 21일</td><td>[모듈시험] 공공데이터 융합 DBMS 구축</td><td align="center">-</td></tr>
 <tr><td nowrap>7월 22일</td><td>머신러닝 — 로지스틱 회귀(질병 예측·유방암 진단, 스케일러 누락 함정), 성능 개선(cross_val_score·GridSearchCV 점수 착시·파이프라인)</td><td nowrap align="center"><a href="./full-stack/필기/7월/22일.md">보기</a></td></tr>
 <tr><td nowrap>7월 23일</td><td>머신러닝 — 비지도학습(K-Means 군집화·PCA 차원축소·연관규칙 apriori/lift·이상치탐지 IsolationForest/IQR), 시각화(matplotlib·seaborn 히트맵), Streamlit 웹앱 배포(캐싱·세션 상태·모델 연동)</td><td nowrap align="center"><a href="./full-stack/필기/7월/23일.md">보기</a></td></tr>
+<tr><td nowrap>7월 24일</td><td>FastAPI 백엔드 실습(React 프론트엔드 분리) — 01INIT(헬스체크)→02기본기능(CORS·Pydantic 검증·경로/쿼리 파라미터·feature_spec.json)→03CRUD(리스트→SQLite 영속화, return 뒤 raise 죽은 코드로 인한 404 회귀버그)</td><td nowrap align="center"><a href="./full-stack/필기/7월/24일.md">보기</a></td></tr>
 </tbody>
 </table>

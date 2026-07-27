@@ -370,3 +370,45 @@ Jupyter 노트북 실습과 별도로, 학습한 모델을 **웹 화면으로 �
 
 > 01_INIT(환경만) → 02_UI(위젯 전체를 모델 없이 훑기) → 03_MODELADD(캐싱된 모델을 폼 입력과 연결해 실제 예측 서비스)로 이어지는 흐름 — Jupyter에서 학습·저장한 모델(`joblib.dump`)을 실제 사용자 화면으로 넘기는 마지막 단계라는 게 이 폴더 전체의 의미.
 
+---
+
+## FASTAPI_WITH_REACT_SB — FastAPI 백엔드 실습 (`FASTAPI_WITH_REACT_SB/`)
+
+Streamlit(파이썬이 화면까지 그리는 방식)과 대비되는 **React 프론트엔드 + FastAPI 백엔드** 분리 구조를 다루는 단원. `01INIT → 02기본기능 → 03CRUD` 3단계로 진행되며, 폴더를 복사해 이어 만든 구조(`Dockerfile`/`requirements.txt`가 세 폴더 모두 동일: `fastapi==0.110.0`, `uvicorn[standard]==0.29.0`, `scikit-learn==1.9.0`, `pandas==3.0.3`, `numpy==2.4.6`, `joblib==1.5.3`, `python:3.11-slim` 컨테이너에서 `uvicorn main:app --port 8001` 실행)라는 점이 STREAMLIT 단원과 동일한 패턴이다.
+
+### `01INIT` — 서버가 뜨는지만 확인
+
+| 파일 | 내용 | 핵심 |
+|---|---|---|
+| `main.py` | `FastAPI()` + `GET /health` → `{"status":"UP"}` 하나뿐 | dict를 그대로 `return`하면 FastAPI가 자동으로 JSON 응답으로 바꿔준다는 것만 확인하는 최소 단계 |
+| `docker-compose.yml` | `build: .`, 포트 `8001:8001`, `restart: unless-stopped` | **볼륨 마운트 없음** — 코드를 고치면 이미지를 다시 빌드해야 반영되는 상태. 02기본기능부터 볼륨 마운트가 추가되는 것과 대비됨 |
+
+### `02기본기능` — CORS·요청 검증·경로/쿼리 파라미터 (`main.py`)
+
+`docker-compose.yml`에 **`.:/app` 볼륨 마운트**와 `WATCHFILES_FORCE_POLLING=true`가 새로 추가돼, 01INIT과 달리 코드를 고치면 컨테이너 재시작 없이 바로 반영된다(uvicorn 기본 reload가 도커 파일시스템 이벤트를 못 잡는 문제를 폴링으로 우회 — STREAMLIT의 `FILE_WATCHER_TYPE=poll`과 같은 이유).
+
+| 주제 | 코드 | 핵심 |
+|---|---|---|
+| CORS | `app.add_middleware(CORSMiddleware, allow_origins=["*"], ...)` | React(다른 포트)에서 오는 요청을 브라우저가 막지 않도록 전체 허용 — 실전에서는 도메인을 좁혀야 함 |
+| 입력 명세 분리 | `spec = json.load(open("feature_spec.json"))` | 자치구 select 옵션·월 number 범위 등 "폼에 뭘 보여줄지"를 코드가 아니라 **JSON 파일**로 분리 — 프론트가 `/spec`을 호출해 폼을 자동 생성할 수 있게 하는 설계 |
+| 요청 본문 검증 | `class PredictRequest(BaseModel): features: Dict[str, Any]` → `POST /predict` | Pydantic이 body 모양을 자동 검증 + `/docs`(Swagger) 문서화까지 같이 해줌 |
+| 경로 파라미터 | `GET /predictions/{pid}` → `def get_one(pid: int)` | 주소의 일부(`/predictions/3`)를 함수 인자로 바로 받음 |
+| 쿼리 파라미터 | `GET /predictions?limit=10` → `def list_all(limit: int = 50)` | `?limit=` 값이 없으면 기본값 50 — 기본값 인자 문법이 그대로 API 설계에 쓰임 |
+| 헬스체크 확장 | `GET /health` → `{"status":"UP", "model": spec["title"]}` | 01INIT의 단순 `{"status":"UP"}`에서 한 단계 나아가 로드된 모델 정보까지 같이 응답 |
+
+> 01INIT의 `/health` 코드가 파일 위쪽에 **주석 처리된 채로 남아있고** 그 아래 실제 동작하는 `/health`가 새로 정의돼 있다 — 이전 버전을 지우지 않고 주석으로 남겨 "무엇이 바뀌었는지" 대조할 수 있게 해둔 강사용 노트 스타일.
+
+### `03CRUD` — 인메모리 리스트 → SQLite 영속 저장소 (`main.py`, `main_01.py`, `store.py`)
+
+메모(`memos`) CRUD API를 두 버전으로 비교할 수 있게 남겨뒀다: **`main_01.py`**(이전 버전, 파이썬 리스트에 직접 저장)와 **`main.py`**(현재 버전, `store.py`를 거쳐 SQLite 파일 `memos.db`에 저장). `feature_spec.json`도 폴더에 남아있지만 이번 단계에서는 `main.py`가 이를 읽지 않아 — 02기본기능을 복사하며 같이 딸려온 미사용 파일이다.
+
+| 파일 | 저장 방식 | 코드 | 핵심 |
+|---|---|---|---|
+| `main_01.py`(이전) | 파이썬 리스트 `memos = []`, `next_id` 전역변수 | `memos.append(row); next_id += 1`, `for row in memos: if row["id"]==mid` | **서버를 재시작하면 데이터가 전부 사라짐** — 이 한계를 보여주기 위한 대조군 버전 |
+| `store.py`(신규) | `sqlite3` 파일 `memos.db` | `init_db()`로 `memos` 테이블 생성(id·text·created_at), `_con()`이 매 호출마다 커넥션을 열고 `try/finally`로 반드시 `close()` | text 컬럼에 값을 그대로 넣지 않고 `json.dumps(text, ensure_ascii=False)`로 인코딩 후 `json.loads`로 되돌림(`_to_dict`) — 값이 항상 문자열이라 지금은 불필요해 보이지만, 나중에 dict·list 같은 복합 값도 그대로 저장할 수 있게 여지를 남긴 설계 |
+| `main.py`(현재) | `store.create/list_all/get/update/delete` 호출로 위임 | `store.init_db()`를 앱 시작 시 1회 호출 → 각 엔드포인트가 리스트 조작 대신 `store.*` 함수 호출로 교체 | `main_01.py`의 `memos = []`, `next_id = 1` 두 줄이 **그대로 남아있지만 실제로는 어디서도 쓰이지 않는 죽은 코드** — 리스트 버전에서 DB 버전으로 옮기며 지우는 걸 깜빡한 흔적 |
+
+> **함정**: `get_memo`/`update_memo`/`delete_memo`는 `return store.get(mid)` 다음 줄에 `raise HTTPException(404, ...)`를 써뒀지만, `return`이 먼저 실행되고 함수가 끝나버려서 이 `raise` 줄은 **영원히 실행되지 않는 죽은 코드**다. 존재하지 않는 `mid`를 조회하면 `store.get()`이 `None`을 반환하고, `main.py`는 그 `None`을 그대로 200 OK로 응답해버려 — 의도(404 에러)와 실제 동작(200 + null)이 어긋나는 실전 버그가 코드에 그대로 남아있다. `main_01.py`의 리스트 버전은 `for` 루프 안에서 못 찾으면 루프를 빠져나온 뒤 `raise`가 정상적으로 실행되어 404가 제대로 나가므로, SQLite로 옮기며 생긴 회귀(regression)인 셈.
+
+> 01INIT(서버 확인) → 02기본기능(CORS·검증·경로/쿼리 파라미터·`/spec`으로 프론트 폼 자동화 준비) → 03CRUD(리스트→SQLite로 영속화, 그 과정에서 생긴 404 처리 회귀버그)로 이어지는 흐름 — Streamlit이 파이썬 안에서 화면까지 그렸다면, 여기서는 FastAPI가 순수 JSON API만 담당하고 화면은 React가 맡는 **프론트/백엔드 분리** 구조로 넘어간다는 게 이 단원의 의미.
+
